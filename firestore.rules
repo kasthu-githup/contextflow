@@ -1,0 +1,191 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net: Default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Hardened Global Primitives
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn();
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Validation Blueprint: UserSettings
+    function isValidUserSettings(data) {
+      return data.keys().hasAll([
+        'userId',
+        'creatorName',
+        'brandNiche',
+        'defaultLanguage',
+        'defaultTone',
+        'targetAudience',
+        'brandVoiceNotes',
+        'ttsVoice',
+        'autoSaveToLibrary',
+        'createdAt',
+        'updatedAt'
+      ]) &&
+      data.keys().hasOnly([
+        'userId',
+        'creatorName',
+        'brandNiche',
+        'defaultLanguage',
+        'defaultTone',
+        'targetAudience',
+        'brandVoiceNotes',
+        'ttsVoice',
+        'autoSaveToLibrary',
+        'createdAt',
+        'updatedAt'
+      ]) &&
+      data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 && data.userId.matches('^[a-zA-Z0-9_\\-]+$') &&
+      data.userId == request.auth.uid &&
+      data.creatorName is string && data.creatorName.size() >= 1 && data.creatorName.size() <= 100 &&
+      data.brandNiche is string && data.brandNiche.size() >= 1 && data.brandNiche.size() <= 300 &&
+      data.defaultLanguage is string && data.defaultLanguage.size() >= 1 && data.defaultLanguage.size() <= 80 &&
+      data.defaultTone is string && data.defaultTone.size() >= 1 && data.defaultTone.size() <= 80 &&
+      data.targetAudience is string && data.targetAudience.size() >= 1 && data.targetAudience.size() <= 300 &&
+      data.brandVoiceNotes is string && data.brandVoiceNotes.size() <= 1000 &&
+      data.ttsVoice is string && data.ttsVoice in ['Kore', 'Puck', 'Charon', 'Fenrir', 'Zephyr'] &&
+      data.autoSaveToLibrary is bool &&
+      data.createdAt is timestamp &&
+      data.updatedAt is timestamp;
+    }
+
+    // Validation Blueprint: ContentItem
+    function isValidContentItem(data) {
+      return data.keys().hasAll([
+        'userId',
+        'moduleId',
+        'moduleName',
+        'prompt',
+        'language',
+        'tone',
+        'displayCreatedAt',
+        'isFavorite',
+        'structured',
+        'createdAt',
+        'updatedAt'
+      ]) &&
+      data.keys().hasOnly([
+        'userId',
+        'moduleId',
+        'moduleName',
+        'prompt',
+        'language',
+        'tone',
+        'displayCreatedAt',
+        'isFavorite',
+        'structured',
+        'createdAt',
+        'updatedAt'
+      ]) &&
+      data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 && data.userId.matches('^[a-zA-Z0-9_\\-]+$') &&
+      data.userId == request.auth.uid &&
+      data.moduleId is string && data.moduleId in [
+        'ai-content-generator',
+        'reels-script',
+        'viral-hooks',
+        'social-captions',
+        'youtube-suite',
+        'seo-article',
+        'content-ideas'
+      ] &&
+      data.moduleName is string && data.moduleName.size() >= 1 && data.moduleName.size() <= 120 &&
+      data.prompt is string && data.prompt.size() >= 1 && data.prompt.size() <= 2000 &&
+      data.language is string && data.language.size() >= 1 && data.language.size() <= 80 &&
+      data.tone is string && data.tone.size() >= 1 && data.tone.size() <= 80 &&
+      data.displayCreatedAt is string && data.displayCreatedAt.size() >= 1 && data.displayCreatedAt.size() <= 40 &&
+      data.isFavorite is bool &&
+      data.structured is map && data.structured.keys().size() <= 30 &&
+      data.createdAt is timestamp &&
+      data.updatedAt is timestamp;
+    }
+
+    // Collection 1: /user_settings/{userId}
+    match /user_settings/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow list: if false;
+
+      allow create: if isOwner(userId) &&
+        isValidId(userId) &&
+        isValidUserSettings(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+
+      allow update: if isOwner(userId) &&
+        isValidId(userId) &&
+        isValidUserSettings(incoming()) &&
+        incoming().userId == existing().userId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'creatorName',
+          'brandNiche',
+          'defaultLanguage',
+          'defaultTone',
+          'targetAudience',
+          'brandVoiceNotes',
+          'ttsVoice',
+          'autoSaveToLibrary',
+          'updatedAt'
+        ]);
+
+      allow delete: if false;
+    }
+
+    // Collection 2: /content_items/{itemId}
+    match /content_items/{itemId} {
+      allow get: if isVerifiedUser() &&
+        isValidId(itemId) &&
+        existing().userId == request.auth.uid;
+
+      allow list: if isVerifiedUser() &&
+        existing().userId == request.auth.uid;
+
+      allow create: if isVerifiedUser() &&
+        isValidId(itemId) &&
+        isValidContentItem(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+
+      allow update: if isVerifiedUser() &&
+        isValidId(itemId) &&
+        isValidContentItem(incoming()) &&
+        existing().userId == request.auth.uid &&
+        incoming().userId == existing().userId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        (
+          // Action: Toggle Favorite
+          incoming().diff(existing()).affectedKeys().hasOnly(['isFavorite', 'updatedAt'])
+        );
+
+      allow delete: if isVerifiedUser() &&
+        isValidId(itemId) &&
+        existing().userId == request.auth.uid;
+    }
+  }
+}

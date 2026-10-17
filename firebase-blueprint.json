@@ -1,0 +1,184 @@
+{
+  "entities": {
+    "UserSettings": {
+      "title": "UserSettings",
+      "description": "Creator profile and AI workspace preferences for ContentFlow",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the owner",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "creatorName": {
+          "type": "string",
+          "description": "Display name or creator handle",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "brandNiche": {
+          "type": "string",
+          "description": "Primary content niche or industry",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "defaultLanguage": {
+          "type": "string",
+          "description": "Default AI output language",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "defaultTone": {
+          "type": "string",
+          "description": "Default AI tone of voice",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "targetAudience": {
+          "type": "string",
+          "description": "Target audience description",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "brandVoiceNotes": {
+          "type": "string",
+          "description": "Custom brand voice instructions",
+          "minLength": 0,
+          "maxLength": 1000
+        },
+        "ttsVoice": {
+          "type": "string",
+          "enum": ["Kore", "Puck", "Charon", "Fenrir", "Zephyr"],
+          "description": "Preferred AI speech synthesis voice"
+        },
+        "autoSaveToLibrary": {
+          "type": "boolean",
+          "description": "Whether generated content automatically saves to library"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp"
+        }
+      },
+      "required": [
+        "userId",
+        "creatorName",
+        "brandNiche",
+        "defaultLanguage",
+        "defaultTone",
+        "targetAudience",
+        "brandVoiceNotes",
+        "ttsVoice",
+        "autoSaveToLibrary",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ContentItem": {
+      "title": "ContentItem",
+      "description": "Generated AI content asset saved in the creator's ContentFlow library",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the creator who owns this item",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "moduleId": {
+          "type": "string",
+          "enum": [
+            "ai-content-generator",
+            "reels-script",
+            "viral-hooks",
+            "social-captions",
+            "youtube-suite",
+            "seo-article",
+            "content-ideas"
+          ],
+          "description": "Dashboard tool identifier"
+        },
+        "moduleName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120,
+          "description": "Human readable tool title"
+        },
+        "prompt": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000,
+          "description": "User question or prompt"
+        },
+        "language": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "description": "Language used for generation"
+        },
+        "tone": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "description": "Tone used for generation"
+        },
+        "displayCreatedAt": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40,
+          "description": "Formatted timestamp for UI display"
+        },
+        "isFavorite": {
+          "type": "boolean",
+          "description": "Whether the item is starred by the user"
+        },
+        "structured": {
+          "type": "object",
+          "description": "Structured AI output map"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when created"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when updated"
+        }
+      },
+      "required": [
+        "userId",
+        "moduleId",
+        "moduleName",
+        "prompt",
+        "language",
+        "tone",
+        "displayCreatedAt",
+        "isFavorite",
+        "structured",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/user_settings/{userId}": {
+      "schema": { "$ref": "#/entities/UserSettings" },
+      "description": "Stores each creator's personal ContentFlow settings keyed by their UID"
+    },
+    "/content_items/{itemId}": {
+      "schema": { "$ref": "#/entities/ContentItem" },
+      "description": "Stores generated AI content assets owned by a specific creator"
+    }
+  }
+}

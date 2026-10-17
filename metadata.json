@@ -1,0 +1,6 @@
+{
+  "name": "Elavarasan Content Flow",
+  "description": "AI-powered content creation studio with voice and text input for scripts, viral hooks, social captions, YouTube SEO, articles, and content ideas.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
