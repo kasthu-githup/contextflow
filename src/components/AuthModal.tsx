@@ -67,6 +67,11 @@ export const AuthModal: React.FC = () => {
 
     try {
       if (activeTab === 'signup') {
+        if (password.length < 6) {
+          setErrorMsg('Password must be at least 6 characters long (குறைந்தது 6 எழுத்துக்கள் தேவை).');
+          setIsSubmitting(false);
+          return;
+        }
         if (password !== confirmPassword) {
           setErrorMsg('Passwords do not match');
           setIsSubmitting(false);
